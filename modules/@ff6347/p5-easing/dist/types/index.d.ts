@@ -1,0 +1,11 @@
+export { easeInBack, easeInOutBack, easeOutBack } from "./easing/back";
+export { easeInBounce, easeInOutBounce, easeOutBounce } from "./easing/bounce";
+export { easeInCirc, easeInOutCirc, easeOutCirc } from "./easing/circ";
+export { easeInCubic, easeInOutCubic, easeOutCubic } from "./easing/cubic";
+export { easeInElastic, easeInOutElastic, easeOutElastic, } from "./easing/elastic";
+export { easeInExpo, easeInOutExpo, easeOutExpo } from "./easing/expo";
+export { easeInLinear, easeInOutLinear, easeOutLinear } from "./easing/linear";
+export { easeInQuad, easeInOutQuad, easeOutQuad } from "./easing/quad";
+export { easeInQuart, easeInOutQuart, easeOutQuart } from "./easing/quart";
+export { easeInQuint, easeInOutQuint, easeOutQuint } from "./easing/quint";
+export { easeInSine, easeInOutSine, easeOutSine } from "./easing/sine";
