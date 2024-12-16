@@ -5,17 +5,21 @@ class Particle {
 	lineCol; //color for circle stroke
 	off; //Vector for noise
 	speed = 2; //number for speed
+	savedSpeed;
 	ateSomeone = 0; //number for how many particles it ate
 	isRaised = false; //boolean for if it is raised
 	maxRaiseSize = 5; //number for max size when raised
 	maxSize = 20; //number for max size
-	maxSpeed = 7; //number for max speed
+	maxSpeed = 10; //number for max speed
 	minSize = 1; //number for min size
 	isDead = false; //boolean if it is dead (has been eaten)
 	isEating = false; //boolean for if it is eating
 	isEatingCounter = 0; //number for tracking devouring animation duration
 	isEatingDuration = 50; //number for how long the devouring animation lasts
 	id; //number for id
+	velocity;
+	acceleration;
+	lifetime = 3000; // unused
 	constructor({ x, y, size = 1, col = "white", id }) {
 		this.position = createVector(x, y);
 		this.size = size;
@@ -25,6 +29,9 @@ class Particle {
 		this.id = id;
 		this.maxRaiseSize += random(-0.7, 0.7);
 		this.maxSize += random(1, 3);
+		this.velocity = p5.Vector.random2D();
+		this.acceleration = p5.Vector.random2D();
+		// this.savedSpeed = this.speed;
 	}
 	display() {
 		fill(
@@ -81,6 +88,22 @@ class Particle {
 	 * @param {Particle[]} particles array of particles for comparison
 	 */
 	update(particles = []) {
+		// this.lifetime--;
+		// if (this.lifetime <= 250) {
+		// 	this.col = color(
+		// 		(hue(this.col) + 90) % 360,
+		// 		saturation(this.col) + 20,
+		// 		brightness(this.col),
+		// 		map(this.lifetime, 250, 0, 100, 10)
+		// 	);
+		// }
+		// if (this.lifetime <= 30) {
+		// 	this.size -= 0.2;
+		// 	if(this.size <=0) this.size = 0;
+		// }
+		// if (this.lifetime <= 0) {
+		// 	this.isDead = true;
+		// }
 		// if it is not raised, grow it
 		if (this.isRaised === false) {
 			this.size += 0.2;
@@ -90,9 +113,11 @@ class Particle {
 		}
 		if (this.isEating === true) {
 			this.isEatingCounter++;
+			this.lifetime++;
 			if (this.isEatingCounter > this.isEatingDuration) {
 				this.isEating = false;
 				this.isEatingCounter = 0;
+				// this.speed = this.savedSpeed;
 			}
 		}
 		// move the particle based on noise and speed
@@ -126,9 +151,9 @@ class Particle {
 				return;
 			}
 
-			// if (this.isEating === true) {
-			// 	return;
-			// }
+			if (this.isEating === true) {
+				return;
+			}
 			// calculate distance between particles
 			const distance = this.position.dist(particle.position);
 			// if the distance is less than the sum of the particles size plus some MAGIC NUMBER, and it is raised, and it is larger then the other particle
@@ -142,11 +167,16 @@ class Particle {
 				// for some time or until it is eaten
 				// or until another comes to close
 				// calculate direction towards the other particle
-				const direction = this.position.copy().sub(particle.position);
+				const direction = p5.Vector.sub(this.position, particle.position);
+				//or const direction = this.position.copy().sub(particle.position);
 				// normalize the direction and multiply by the size of the particle divided by 50 (MAGIC NUMBER)
-				direction.normalize().mult(this.size / 10);
+				direction.setMag(1);
+				this.acceleration = direction;
+				//or  direction.normalize().mult(this.size / 10);
+				this.velocity.add(this.acceleration);
+				this.velocity.limit(5);
 				// add the direction to the particle's position
-				this.position.add(direction);
+				this.position.add(this.velocity);
 				// draw a curve from the particle to the other particle that are near
 				stroke(this.lineCol);
 				noFill();
@@ -176,7 +206,11 @@ class Particle {
 					// increase the ateSomeone counter
 					this.ateSomeone++;
 					// if it is not already eating, start eating
-					if (this.isEating === false) this.isEating = true;
+					if (this.isEating === false) {
+						this.isEating = true;
+						// this.savedSpeed = this.speed;
+						// this.speed = 1;
+					}
 					// change the color of the particle
 					let h = hue(this.col);
 					if (random(1) > 0.5) {
