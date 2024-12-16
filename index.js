@@ -1,21 +1,20 @@
 class Particle {
-	position;
-	size;
-	col;
-	lineCol;
-	off;
-	speed = 2;
-	ateSomeone = 0;
-	isRaised = false;
-	maxRaiseSize = 5;
-	maxSize = 20;
-	maxSpeed = 7;
-	minSize = 1;
-	isDead = false;
-	didEat = false;
-	didEatCounter = 0;
-	didEatDuration = 50;
-	id;
+	position; //Vector
+	size; //number for circle size
+	col; //color for circle fill
+	lineCol; //color for circle stroke
+	off; //Vector for noise
+	speed; //number for speed
+	ateSomeone; //number for how many particles it ate
+	isRaised; //boolean for if it is raised
+	maxRaiseSize; //number to tell when it is raised
+	maxSize; //number to constrain max size
+	maxSpeed; //number to constrain max speed
+	isDead = false; //boolean if it was eaten
+	didEat = false; //boolean if it is eating
+	didEatCounter = 0; //number counter for how long it is devouring
+	didEatDuration = 50; //number for how long it is eating
+	id; //number for id for comparison
 	constructor({ x, y, size = 1, col = "white", id }) {
 		this.position = createVector(x, y);
 		this.size = size;
@@ -31,11 +30,12 @@ class Particle {
 			brightness(this.col),
 			constrain(100 - this.ateSomeone * 10, 25, 100)
 		);
-		// noStroke();
+
 		const strokeCol = this.lineCol;
 
 		stroke(hue(strokeCol), saturation(strokeCol), brightness(strokeCol), 50);
 		strokeWeight(0.5);
+		// draw the Particle with several circles based on how many particles it ate. Once ot becomes a white walker this is no longer visible due to the size of the circles
 		for (let i = 0; i < Math.max(this.ateSomeone, 2); i++) {
 			circle(
 				this.position.x +
@@ -52,6 +52,8 @@ class Particle {
 			);
 		}
 		//devoure animation
+		// if it is eating, draw a smaller circle that is moving around
+		// inside the larger circles uses noise, moves to center of the larger circle
 		if (this.didEat === true) {
 			fill(255, 0, 0, map(this.didEatCounter, 0, this.didEatDuration, 100, 0));
 			noStroke();
@@ -66,7 +68,12 @@ class Particle {
 			);
 		}
 	}
+	/**
+	 * update the particle
+	 * @param {Particle[]} particles array of particles for comparison
+	 */
 	update(particles = []) {
+		// if it is not raised, grow it
 		if (this.isRaised === false) {
 			this.size += 0.2;
 			if (this.size >= this.maxRaiseSize) {
@@ -80,11 +87,13 @@ class Particle {
 				this.didEatCounter = 0;
 			}
 		}
+		// move the particle based on noise and speed
 		this.position.x = this.position.x + noise(this.off.x) * this.speed; //random(-1, 1);
 		this.position.y = this.position.y + (noise(this.off.y) * this.speed) / 2;
-
+		// update noise offset vector
 		this.off.add(createVector(random(-1, 1), random(-1, 1)));
 
+		// wrap the particle around the screen
 		if (this.position.x < 0) {
 			this.position.x = width;
 		}
@@ -100,22 +109,31 @@ class Particle {
 
 		// compare with other particles
 		particles.forEach((particle) => {
+			// skip itself
 			if (particle.id === this.id) {
 				return;
 			}
+			// skip if it is smaller then the other particle
 			if (this.size < particle.size) {
 				return;
 			}
 
+			// calculate distance between particles
 			const distance = this.position.dist(particle.position);
+			// if the distance is less than the sum of the particles size plus some MAGIC NUMBER, and it is raised, and it is larger then the other particle
+			// move towards the other particle
 			if (
 				distance < (5 * this.ateSomeone) / 20 + this.size + particle.size &&
 				this.isRaised &&
 				this.size > particle.size
 			) {
+				// calculate direction towards the other particle
 				const direction = this.position.copy().sub(particle.position);
+				// normalize the direction and multiply by the size of the particle divided by 50 (MAGIC NUMBER)
 				direction.normalize().mult(this.size / 50);
+				// add the direction to the particle's position
 				this.position.add(direction);
+				// draw a curve from the particle to the other particle that are near
 				stroke(this.lineCol);
 				noFill();
 				beginShape();
@@ -130,14 +148,22 @@ class Particle {
 				);
 				endShape();
 
+				// if the distance is less than the sum of the particles size divided by 2, and it is raised, and it is larger then the other particle
+				// eat the other particle
 				if (distance < (this.size + particle.size) / 2) {
+					// set the other particle to dead
 					particle.isDead = true;
+					// grow the particle by 0.2 MAGIC NUMBER
 					this.size += 0.2;
+					// constrain the size
 					if (this.size > this.maxSize) {
 						this.size = this.maxSize;
 					}
+					// increase the ateSomeone counter
 					this.ateSomeone++;
+					// if it is not already eating, start eating
 					if (this.didEat === false) this.didEat = true;
+					// change the color of the particle
 					let h = hue(this.col);
 					if (random(1) > 0.5) {
 						h += random(-1, 1);
@@ -155,7 +181,9 @@ class Particle {
 					}
 
 					this.col = color(hue(this.col), sat, bri, 100);
+					// increase the speed of the particle by 0.2 MAGIC NUMBER
 					this.speed += 0.2;
+					// constrain the speed
 					if (this.speed > this.maxSpeed) {
 						this.speed = this.maxSpeed;
 					}
