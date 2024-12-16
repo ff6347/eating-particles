@@ -4,17 +4,18 @@ class Particle {
 	col; //color for circle fill
 	lineCol; //color for circle stroke
 	off; //Vector for noise
-	speed; //number for speed
-	ateSomeone; //number for how many particles it ate
-	isRaised; //boolean for if it is raised
-	maxRaiseSize; //number to tell when it is raised
-	maxSize; //number to constrain max size
-	maxSpeed; //number to constrain max speed
-	isDead = false; //boolean if it was eaten
-	didEat = false; //boolean if it is eating
-	didEatCounter = 0; //number counter for how long it is devouring
-	didEatDuration = 50; //number for how long it is eating
-	id; //number for id for comparison
+	speed = 2; //number for speed
+	ateSomeone = 0; //number for how many particles it ate
+	isRaised = false; //boolean for if it is raised
+	maxRaiseSize = 5; //number for max size when raised
+	maxSize = 20; //number for max size
+	maxSpeed = 7; //number for max speed
+	minSize = 1; //number for min size
+	isDead = false; //boolean if it is dead (has been eaten)
+	didEat = false; //boolean for if it is eating
+	didEatCounter = 0; //number for tracking devouring animation duration
+	didEatDuration = 50; //number for how long the devouring animation lasts
+	id; //number for id
 	constructor({ x, y, size = 1, col = "white", id }) {
 		this.position = createVector(x, y);
 		this.size = size;
@@ -30,7 +31,7 @@ class Particle {
 			brightness(this.col),
 			constrain(100 - this.ateSomeone * 10, 25, 100)
 		);
-
+		// noStroke();
 		const strokeCol = this.lineCol;
 
 		stroke(hue(strokeCol), saturation(strokeCol), brightness(strokeCol), 50);
