@@ -2,6 +2,7 @@ class Particle {
 	position;
 	size;
 	col;
+	lineCol;
 	off;
 	speed = 2;
 	ateSomeone = 0;
@@ -11,12 +12,16 @@ class Particle {
 	maxSpeed = 7;
 	minSize = 1;
 	isDead = false;
+	didEat = false;
+	didEatCounter = 0;
+	didEatDuration = 50;
 	id;
 	constructor({ x, y, size = 1, col = "white", id }) {
 		this.position = createVector(x, y);
 		this.size = size;
 		this.col = col;
 		this.off = createVector(random(1000), random(2000, 3000));
+		this.lineCol = color("crimson");
 		this.id = id;
 	}
 	display() {
@@ -26,7 +31,11 @@ class Particle {
 			brightness(this.col),
 			constrain(100 - this.ateSomeone * 10, 25, 100)
 		);
-		noStroke();
+		// noStroke();
+		const strokeCol = this.lineCol;
+
+		stroke(hue(strokeCol), saturation(strokeCol), brightness(strokeCol), 50);
+		strokeWeight(0.5);
 		for (let i = 0; i < Math.max(this.ateSomeone, 2); i++) {
 			circle(
 				this.position.x +
@@ -42,12 +51,33 @@ class Particle {
 				this.size
 			);
 		}
+		//devoure animation
+		if (this.didEat === true) {
+			fill(255, 0, 0, map(this.didEatCounter, 0, this.didEatDuration, 100, 0));
+			noStroke();
+			circle(
+				this.position.x +
+					(noise(this.off.x) - 0.5) *
+						map(this.didEatCounter, 0, this.didEatDuration, this.size, 1),
+				this.position.y +
+					(noise(this.off.y) - 0.5) *
+						map(this.didEatCounter, 0, this.didEatDuration, this.size, 1),
+				5
+			);
+		}
 	}
 	update(particles = []) {
 		if (this.isRaised === false) {
 			this.size += 0.2;
 			if (this.size >= this.maxRaiseSize) {
 				this.isRaised = true;
+			}
+		}
+		if (this.didEat === true) {
+			this.didEatCounter++;
+			if (this.didEatCounter > this.didEatDuration) {
+				this.didEat = false;
+				this.didEatCounter = 0;
 			}
 		}
 		this.position.x = this.position.x + noise(this.off.x) * this.speed; //random(-1, 1);
@@ -79,20 +109,20 @@ class Particle {
 
 			const distance = this.position.dist(particle.position);
 			if (
-				distance < (5 * this.ateSomeone) / 10 + this.size + particle.size &&
+				distance < (5 * this.ateSomeone) / 20 + this.size + particle.size &&
 				this.isRaised &&
 				this.size > particle.size
 			) {
 				const direction = this.position.copy().sub(particle.position);
-				direction.normalize().mult(this.size / 100);
+				direction.normalize().mult(this.size / 50);
 				this.position.add(direction);
-				stroke(this.col);
+				stroke(this.lineCol);
 				noFill();
 				beginShape();
 				vertex(this.position.x, this.position.y);
 				bezierVertex(
-					this.position.x + 15,
-					this.position.y + 15,
+					this.position.x + 5,
+					this.position.y + 5,
 					this.position.x - 15,
 					this.position.y - 15,
 					particle.position.x,
@@ -100,13 +130,14 @@ class Particle {
 				);
 				endShape();
 
-				if (distance < 2 + this.size + particle.size) {
+				if (distance < (this.size + particle.size) / 2) {
 					particle.isDead = true;
 					this.size += 0.2;
 					if (this.size > this.maxSize) {
 						this.size = this.maxSize;
 					}
 					this.ateSomeone++;
+					if (this.didEat === false) this.didEat = true;
 					let h = hue(this.col);
 					if (random(1) > 0.5) {
 						h += random(-1, 1);
@@ -137,7 +168,6 @@ class Particle {
 const particles = [];
 const numberOfParticles = 5000;
 let particleCount = 0;
-let allSpawend = false;
 let birthRate = 30;
 function setup() {
 	const canvas = createCanvas(windowWidth - 16, windowHeight - 64);
@@ -146,7 +176,7 @@ function setup() {
 }
 
 function draw() {
-	if (particleCount < numberOfParticles && allSpawend === false) {
+	if (particleCount < numberOfParticles) {
 		if (frameCount > 100 && frameCount % birthRate === 0) {
 			const aParticle = new Particle({
 				x: random(width),
@@ -159,17 +189,14 @@ function draw() {
 
 		particleCount++;
 		if (particleCount >= numberOfParticles) {
-			allSpawend = true;
 		}
 		birthRate--;
-		if (birthRate < +2) {
+		if (birthRate < 2) {
 			birthRate = 2;
 		}
-		// else{
-		// 	allSpawend = false;
-		// }
 	}
-	background(320, 0, 90, 100);
+	const bgCol = color((hue(color("crimson")) + 180) % 360, 50, 90, 60);
+	background(bgCol);
 	particles.forEach((particle) => {
 		particle.update(particles);
 		particle.display();
@@ -178,6 +205,9 @@ function draw() {
 	for (let i = particles.length - 1; i >= 0; i--) {
 		if (particles[i].isDead) {
 			particles.splice(i, 1);
+			if (random(1) > 0.5) {
+				particleCount--;
+			}
 		}
 	}
 }
