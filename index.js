@@ -12,9 +12,9 @@ class Particle {
 	maxSpeed = 7; //number for max speed
 	minSize = 1; //number for min size
 	isDead = false; //boolean if it is dead (has been eaten)
-	didEat = false; //boolean for if it is eating
-	didEatCounter = 0; //number for tracking devouring animation duration
-	didEatDuration = 50; //number for how long the devouring animation lasts
+	isEating = false; //boolean for if it is eating
+	isEatingCounter = 0; //number for tracking devouring animation duration
+	isEatingDuration = 50; //number for how long the devouring animation lasts
 	id; //number for id
 	constructor({ x, y, size = 1, col = "white", id }) {
 		this.position = createVector(x, y);
@@ -23,6 +23,8 @@ class Particle {
 		this.off = createVector(random(1000), random(2000, 3000));
 		this.lineCol = color("crimson");
 		this.id = id;
+		this.maxRaiseSize += random(-0.7, 0.7);
+		this.maxSize += random(1, 3);
 	}
 	display() {
 		fill(
@@ -55,16 +57,21 @@ class Particle {
 		//devoure animation
 		// if it is eating, draw a smaller circle that is moving around
 		// inside the larger circles uses noise, moves to center of the larger circle
-		if (this.didEat === true) {
-			fill(255, 0, 0, map(this.didEatCounter, 0, this.didEatDuration, 100, 0));
+		if (this.isEating === true) {
+			fill(
+				255,
+				0,
+				0,
+				map(this.isEatingCounter, 0, this.isEatingDuration, 100, 0)
+			);
 			noStroke();
 			circle(
 				this.position.x +
 					(noise(this.off.x) - 0.5) *
-						map(this.didEatCounter, 0, this.didEatDuration, this.size, 1),
+						map(this.isEatingCounter, 0, this.isEatingDuration, this.size, 1),
 				this.position.y +
 					(noise(this.off.y) - 0.5) *
-						map(this.didEatCounter, 0, this.didEatDuration, this.size, 1),
+						map(this.isEatingCounter, 0, this.isEatingDuration, this.size, 1),
 				5
 			);
 		}
@@ -81,11 +88,11 @@ class Particle {
 				this.isRaised = true;
 			}
 		}
-		if (this.didEat === true) {
-			this.didEatCounter++;
-			if (this.didEatCounter > this.didEatDuration) {
-				this.didEat = false;
-				this.didEatCounter = 0;
+		if (this.isEating === true) {
+			this.isEatingCounter++;
+			if (this.isEatingCounter > this.isEatingDuration) {
+				this.isEating = false;
+				this.isEatingCounter = 0;
 			}
 		}
 		// move the particle based on noise and speed
@@ -119,19 +126,25 @@ class Particle {
 				return;
 			}
 
+			// if (this.isEating === true) {
+			// 	return;
+			// }
 			// calculate distance between particles
 			const distance = this.position.dist(particle.position);
 			// if the distance is less than the sum of the particles size plus some MAGIC NUMBER, and it is raised, and it is larger then the other particle
 			// move towards the other particle
 			if (
-				distance < (5 * this.ateSomeone) / 20 + this.size + particle.size &&
+				distance < (5 * this.ateSomeone) / 10 + this.size + particle.size &&
 				this.isRaised &&
 				this.size > particle.size
 			) {
+				// TODO: Make the steering behavior target one specific particle
+				// for some time or until it is eaten
+				// or until another comes to close
 				// calculate direction towards the other particle
 				const direction = this.position.copy().sub(particle.position);
 				// normalize the direction and multiply by the size of the particle divided by 50 (MAGIC NUMBER)
-				direction.normalize().mult(this.size / 50);
+				direction.normalize().mult(this.size / 10);
 				// add the direction to the particle's position
 				this.position.add(direction);
 				// draw a curve from the particle to the other particle that are near
@@ -155,7 +168,7 @@ class Particle {
 					// set the other particle to dead
 					particle.isDead = true;
 					// grow the particle by 0.2 MAGIC NUMBER
-					this.size += 0.2;
+					this.size += random(0.3, 0.6);
 					// constrain the size
 					if (this.size > this.maxSize) {
 						this.size = this.maxSize;
@@ -163,7 +176,7 @@ class Particle {
 					// increase the ateSomeone counter
 					this.ateSomeone++;
 					// if it is not already eating, start eating
-					if (this.didEat === false) this.didEat = true;
+					if (this.isEating === false) this.isEating = true;
 					// change the color of the particle
 					let h = hue(this.col);
 					if (random(1) > 0.5) {
@@ -183,7 +196,7 @@ class Particle {
 
 					this.col = color(hue(this.col), sat, bri, 100);
 					// increase the speed of the particle by 0.2 MAGIC NUMBER
-					this.speed += 0.2;
+					this.speed += random(0.2, 0.5);
 					// constrain the speed
 					if (this.speed > this.maxSpeed) {
 						this.speed = this.maxSpeed;
@@ -195,7 +208,7 @@ class Particle {
 }
 
 const particles = [];
-const numberOfParticles = 5000;
+const numberOfParticles = 2000;
 let particleCount = 0;
 let birthRate = 30;
 function setup() {
